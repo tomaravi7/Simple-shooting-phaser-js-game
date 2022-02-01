@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<head>
+    <title>My first phaser js game</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style>
+        body{
+            margin: top 20%;;
+            margin-left: 20vw;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        var config={
+            type:Phaser.AUTO,
+            width: 800,
+            height: 600,
+            physics:{
+                default:'arcade',
+                arcade: {
+                    gravity:{y:4},
+                    debug:false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+        var game =new Phaser.Game(config);
+        var player;
+        var dude;
+        var xSpeed=0;
+        var ySpeed=0;
+        let dudeX=1;
+        let dudeY=1;
+        var cursors;
+        var score=0;
+        var scoreText="";
+        var timerText="";
+        var timer=0;
+        const Accel=8;
+        let dudeAccel=4; 
+        var gameover=false;
+        let interval;
+        let accuracy=40;
+        var shot;
+        var trigger;
+        var bgmusic;
+
+        
+
+        function preload ()
+        {
+            this.load.image('sky','assets/sky.png');
+            this.load.spritesheet('dude','assets/dude.png',{ frameWidth: 32, frameHeight: 48 });
+            this.load.audio('bgm','assets/cold.mp3');
+            this.load.audio('shot','assets/gunshot.mp3');
+            this.load.image('ch','assets/c1.png');
+            this.load.audio('met','assets/met.mp3');
+        }
+        function create ()
+        {
+            this.add.image(400, 300, 'sky');
+            scoreText=this.add.text(16,16,'Score : 0',{fontSize:"22px"});
+            timerText=this.add.text(600,16,'Timer : 0',{fontSize:"22px"});
+            dude=this.physics.add.sprite( 500,150,'dude');
+            dude.setCollideWorldBounds(true);
+            player=this.physics.add.image(200,150,'ch');
+            player.setCollideWorldBounds(true);
+
+            this.anims.create({
+            key: 'left',
+            frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+            });
+
+            this.anims.create({
+                key: 'turn',
+                frames: [ { key: 'dude', frame: 4 } ],
+                frameRate: 20
+            });
+
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
+                frameRate: 10,
+                repeat: -1
+            });
+            
+            cursors = this.input.keyboard.createCursorKeys();
+            trigger=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+            dude.anims.play('right',true);
+            shot=this.sound.add('shot');
+            bgmusic=this.sound.add('met');
+            bgmusic.play();
+
+            interval=setInterval(function(){
+            timer+=1;
+            timerText.setText('Timer : '+timer);
+            },1000);
+        }
+        function update ()
+        {
+
+            if(timer>=61)
+            {
+                gameover=true;
+                endgame();
+            }
+            if(gameover==true)
+            {
+                return;
+            }
+            //dude movement
+            dude.x=dude.x+dudeX;
+            dude.y=dude.y+dudeY;
+            if(dude.x>760){
+                dude.x=759;
+                dudeX=dudeX*(-1);
+                dude.setVelocityX(dudeX);
+                dude.anims.play('left',true);
+            }
+            else if(dude.x<50){
+                dude.x=51;
+                dudeX=dudeX*(-1);
+                dude.setVelocityX(dudeX);
+                dude.anims.play('right',true);
+            };
+            if(dude.y>550){
+                dudeY=dudeY*(-1);
+                dude.setVelocityY(dudeY);
+            }
+            else if(dude.y<=50){
+                dudeY=dudeY*(-1);
+                dude.setVelocityY(dudeY);
+            } 
+
+            //crosshair movement
+            if (cursors.left.isDown||this.input.mouse.locked)
+            {
+                xSpeed=xSpeed-Accel;
+                player.setVelocityX(xSpeed);
+            }
+            else if (cursors.right.isDown)
+            {
+                xSpeed=xSpeed+Accel;
+                player.setVelocityX(xSpeed);
+            }
+            else if (cursors.up.isDown)
+            {
+                ySpeed=ySpeed-Accel;
+                player.setVelocityY(ySpeed);
+            }
+            else if (cursors.down.isDown)
+            {
+                ySpeed=ySpeed+Accel;
+                player.setVelocityY(ySpeed);
+            }
+            //fire
+            if(Phaser.Input.Keyboard.JustDown(trigger))
+            {
+                shot.play();
+                if(Math.abs(player.x-dude.x)<accuracy&&Math.abs(player.y-dude.y)<accuracy)
+                {
+                    hit();
+                }
+                else
+                {
+                    miss();
+                }
+            }
+        }
+        function hit(){
+            score=score+10;
+            scoreText.setText('Score : '+score);
+            dude.x=500;
+            dude.y=150;
+            dude.anims.play('right',true);
+            resetPlayer();
+        }
+        function miss()
+        {
+            score=score-1;
+            scoreText.setText('Score : '+score);
+        }
+        function resetPlayer(){
+            player.setVelocityX(0);
+            player.setVelocityY(0);
+            xSpeed=0;
+            ySpeed=0;
+        }
+        function endgame()
+        {
+            dude.destroy();
+            player.destroy();
+            timerText.setText('');
+            clearInterval(interval);
+        }
+    </script>
+</body>
